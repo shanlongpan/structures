@@ -1,13 +1,43 @@
 package main
 
-func main() {
-	nodeG := Node{data: "g", left: nil, right: nil}
-	nodeF := Node{data: "f", left: &nodeG, right: nil}
-	nodeE := Node{data: "e", left: nil, right: nil}
-	nodeD := Node{data: "d", left: &nodeE, right: nil}
-	nodeC := Node{data: "c", left: nil, right: nil}
-	nodeB := Node{data: "b", left: &nodeD, right: &nodeF}
-	nodeA := Node{data: "a", left: &nodeB, right: &nodeC}
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"time"
+)
+var shardIndexes = make([]uint64, 32)
 
+func main() {
+
+	s := []byte("同学们，上午好")
+	m := func(r rune) rune {
+		if r == '上' {
+			r = '下'
+		}
+		return r
+	}
+
+	fmt.Println(string(s))
+	fmt.Println(string(bytes.Map(m, s)))
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	//defer cancel()
+
+	go handle(ctx, 1500*time.Millisecond)
+	cancel()
+	select {
+	case <-ctx.Done():
+		fmt.Println("main", ctx.Err())
+	}
 }
 
+func handle(ctx context.Context, duration time.Duration) {
+	select {
+	case <-ctx.Done():
+		fmt.Println("handle", ctx.Err())
+
+	case <-time.After(duration):
+		fmt.Println("process request with", duration)
+	}
+}
