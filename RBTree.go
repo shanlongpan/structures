@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
+	"time"
 )
 
 type RBTree struct {
@@ -16,6 +18,7 @@ type node struct {
 	rightNode  *node
 	fatherNode *node
 	value      int
+	LastTime   []int64
 }
 
 //红黑通过bool类型来存储，并设置常量
@@ -132,17 +135,17 @@ func findBroNode(n *node) (bro *node) {
 	return bro
 }
 
-func (t *RBTree) insert(v int) {
+func (t *RBTree) insert(v int,timer []int64) {
 	//如果根节点为nil，则先插入新的根节点。 第一种情况最简单 case1
 	if t.root == nil {
 		t.numCount++
-		t.root = &node{value: v, color: RBTBlack}
+		t.root = &node{value: v, color: RBTBlack,LastTime:timer}
 		return
 	}
 
 	n := t.root
 	//新插入的节点为红色
-	insertNode := &node{value: v, color: RBTRed}
+	insertNode := &node{value: v, color: RBTRed,LastTime:timer}
 
 	//标记父节点，找到父节点追加到父节点下面
 	var nf *node
@@ -358,29 +361,61 @@ func (t *RBTree) fixCase6(node *node) {
 	t.fixCase3(node)
 }
 func main() {
-	sliceInsert := []int{17, 8, 3, 6, 16, 10, 13, 14, 5, 18, 15, 4, 19, 7, 11, 0, 2, 9, 1, 12, 100, 99, 33, 20}
 	rbTree := NewRBtree()
-	for _, val := range sliceInsert {
-		rbTree.insert(val)
+	beginTimer:=time.Now()
+	timer:=beginTimer.Unix()
+	var fistTimer int64
+	for i:=0;i<15000000;i++{
+		rand.Seed(time.Now().UnixNano())
+		randNumber:=rand.Int63n(8640000) // 十天内
+		fistTimer=timer-randNumber
+		rbTree.insert(i,[]int64{fistTimer,fistTimer})
 	}
-	preOrderRecursives(*rbTree.root)
 
-	for _, val := range sliceInsert {
-		rbTree.delete(val)
-		fmt.Println("==========================节点个数", rbTree.numCount)
-		if rbTree.numCount > 0 {
-			preOrderRecursives(*rbTree.root)
+	fmt.Println(time.Since(beginTimer))
+	var s =make([]int64,0,15000)
+	t:=time.Now()
+
+	week := t.AddDate(0, 0, -7).Unix()
+	todaySince := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location()).Unix()
+	for i:=0;i<15000000;i++{
+		if i%1000==0{
+			nod:=rbTree.find(i)
+
+			if nod.LastTime[1]>todaySince{
+				s=append(s,int64(i))
+			}else if nod.LastTime[0]>week{
+				s=append(s,int64(i))
+			}else {
+				continue
+			}
+			nod.LastTime=append(nod.LastTime,timer)
+			nod.LastTime=nod.LastTime[1:]
 		}
 	}
+	fmt.Println(len(s))
+	fmt.Println(time.Since(t))
+
+	//sliceInsert := []int{17, 8, 3, 6, 16, 10, 13, 14, 5, 18, 15, 4, 19, 7, 11, 0, 2, 9, 1, 12, 100, 99, 33, 20}
+	//rbTree := NewRBtree()
+	//for _, val := range sliceInsert {
+	//	rbTree.insert(val)
+	//}
+	//preOrderRecursives(*rbTree.root)
+	//
+	//for _, val := range sliceInsert {
+	//	rbTree.delete(val)
+	//	fmt.Println("==========================节点个数", rbTree.numCount)
+	//	if rbTree.numCount > 0 {
+	//		preOrderRecursives(*rbTree.root)
+	//	}
+	//}
 
 }
 
 func preOrderRecursives(nodes node) {
 	//前序 前序遍历按照“根结点-左孩子-右孩子”的顺序进行访问。
 	//fmt.Println(node.value)
-	if nodes == (node{}) {
-		return
-	}
 	if nodes.leftNode != nil {
 		preOrderRecursives(*nodes.leftNode)
 	}

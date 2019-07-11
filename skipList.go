@@ -14,17 +14,16 @@ import (
 const (
 	MAX_LEVEL   = 32
 	PROBABILITY = 0.25
-	SHARDS      = 32
 )
 
 type Node struct {
 	index     uint64
-	value     interface{}
+	value     []int64
 	nextNodes []*Node
 }
 
 // newNode will create a node using in this package but not external package.
-func newNode(index uint64, value interface{}, level int) *Node {
+func newNode(index uint64, value []int64, level int) *Node {
 	return &Node{
 		index:     index,
 		value:     value,
@@ -55,6 +54,9 @@ type skipList struct {
 // For example, if you expect the skip list contains 10000000 elements, then N = 10000000, L(N) ≈ 12.
 
 func newSkipList(level int) *skipList {
+	if level>MAX_LEVEL{
+		level=MAX_LEVEL
+	}
 	head := newNode(0, nil, level)
 	var tail *Node
 	for i := 0; i < len(head.nextNodes); i++ {
@@ -134,7 +136,7 @@ func (s *skipList) searchWithoutPreviousNodes(index uint64) *Node {
 
 // insert will insert a value into skip list and update the length.
 // If skip has these this index, overwrite the value, otherwise add it.
-func (s *skipList) insert(index uint64, value interface{}) {
+func (s *skipList) insert(index uint64, value []int64) {
 	// Write lock and unlock.
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
@@ -249,17 +251,38 @@ func (s *skipList) print() {
 }
 
 func main(){
-	sikpNew:=newSkipList(4)
-	for i:=0;i<40;i++{
+	skipNew:=newSkipList(12)
+	beginTimer:=time.Now()
+	timer:=beginTimer.Unix()
+	var fistTimer int64
+	for i:=0;i<15000000;i++{
 		rand.Seed(time.Now().UnixNano())
-		sikpNew.print()
-		indx:=rand.Intn(200)
-		sikpNew.insert(uint64(indx),"xiaoming4")
-		ids:=[]uint64{}
-		for _,sli:= range  sikpNew.snapshot(){
-			ids=append(ids,sli.index)
-		}
+		randNumber:=rand.Int63n(8640000) // 十天内
+		fistTimer=timer-randNumber
+		skipNew.insert(uint64(i),[]int64{fistTimer,fistTimer})
 	}
 
+	fmt.Println(time.Since(beginTimer))
+	var s =make([]int64,0,15000)
+	t:=time.Now()
 
+	week := t.AddDate(0, 0, -7).Unix()
+	todaySince := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location()).Unix()
+	for i:=0;i<15000000;i++{
+		if i%1000==0{
+			nod:=skipNew.searchWithoutPreviousNodes(uint64(i))
+
+			if nod.value[1]>todaySince{
+				s=append(s,int64(i))
+			}else if nod.value[0]>week{
+				s=append(s,int64(i))
+			}else {
+				continue
+			}
+			nod.value=append(nod.value,timer)
+			nod.value=nod.value[1:]
+		}
+	}
+	fmt.Println(len(s))
+	fmt.Println(time.Since(t))
 }
