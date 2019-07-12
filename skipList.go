@@ -8,21 +8,19 @@ import (
 	"time"
 )
 
-// Comes from redis's implementation.
-// Also you can see more detail in William Pugh's paper <Skip Lists: A Probabilistic Alternative to Balanced Trees>.
-// The paper is in ftp://ftp.cs.umd.edu/pub/skipLists/skiplists.pdf
+//最大层级32层，层级参数0.25，减少高层级数据数量
 const (
 	MAX_LEVEL   = 32
 	PROBABILITY = 0.25
 )
-
+//node具体节点
 type Node struct {
 	index     uint64
 	value     []int64
 	nextNodes []*Node
 }
 
-// newNode will create a node using in this package but not external package.
+// 创建新的节点
 func newNode(index uint64, value []int64, level int) *Node {
 	return &Node{
 		index:     index,
@@ -31,16 +29,17 @@ func newNode(index uint64, value []int64, level int) *Node {
 	}
 }
 
-// Index will return the node's index.
+// 返回index
 func (n *Node) Index() uint64 {
 	return n.index
 }
 
-// Value will return the node's value.
+// 返回value
 func (n *Node) Value() interface{} {
 	return n.value
 }
 
+//跳跃表结构体
 type skipList struct {
 	level  int
 	length int32
@@ -49,9 +48,8 @@ type skipList struct {
 	mutex  sync.RWMutex
 }
 
-// A simple way to determine the level is L(N) = log(1/PROBABILITY)(N).
-// N is the count of the skip list which you can estimate. PROBABILITY is 0.25 in this case.
-// For example, if you expect the skip list contains 10000000 elements, then N = 10000000, L(N) ≈ 12.
+
+//创建跳跃表，合适的层级经验值   L(N) = log(1/PROBABILITY)(N).  PROBABILITY=0.25 ，100万的数据， L(N) ≈ 12
 
 func newSkipList(level int) *skipList {
 	if level>MAX_LEVEL{
@@ -134,8 +132,8 @@ func (s *skipList) searchWithoutPreviousNodes(index uint64) *Node {
 	}
 }
 
-// insert will insert a value into skip list and update the length.
-// If skip has these this index, overwrite the value, otherwise add it.
+//插入或者更新跳跃表，不存在就插入，存在就覆盖更新
+
 func (s *skipList) insert(index uint64, value []int64) {
 	// Write lock and unlock.
 	s.mutex.Lock()
@@ -171,8 +169,7 @@ func (s *skipList) insert(index uint64, value []int64) {
 	}
 }
 
-// delete will find the index is existed or not firstly.
-// If existed, delete it and update length, otherwise do nothing.
+//删除index，存在就删除，更新跳跃表长度，不存在不处理
 func (s *skipList) delete(index uint64) {
 	// Write lock and unlock.
 	s.mutex.Lock()
@@ -198,7 +195,8 @@ func (s *skipList) delete(index uint64) {
 	}
 }
 
-// snapshot will create a snapshot of the skip list and return a slice of the nodes.
+//创建一个跳跃表快照，返回node的切片
+
 func (s *skipList) snapshot() []*Node {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
@@ -222,13 +220,13 @@ func (s *skipList) snapshot() []*Node {
 	return result
 }
 
-// getLength will return the length of skip list.
+// 返回跳跃表长度
 func (s *skipList) getLength() int32 {
 	return atomic.LoadInt32(&s.length)
 }
 
-// randomLevel will generate and random level that level > 0 and level < skip list's level
-// This comes from redis's implementation.
+//生成一个随机的层级
+
 func (s *skipList) randomLevel() int {
 	level := 1
 	for rand.Float64() < PROBABILITY && level < s.level {
@@ -238,6 +236,7 @@ func (s *skipList) randomLevel() int {
 	return level
 }
 
+//打印跳跃表
 func (s *skipList) print() {
 
 	for i := s.level - 1; i >= 0; i-- {
