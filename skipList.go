@@ -69,9 +69,8 @@ func newSkipList(level int) *skipList {
 	}
 }
 
-// searchWithPreviousNode will search given index in skip list.
-// The first return value represents the previous nodes need to update when call Insert function.
-// The second return value represents the value with given index or the closet value whose index is larger than given index.
+
+//插入的时候使用，返回需要更新的 previous nodes ， The second return value represents the value with given index or the closet value whose index is larger than given index.
 func (s *skipList) searchWithPreviousNodes(index uint64) ([]*Node, *Node) {
 	// Store all previous value whose index is less than index and whose next value's index is larger than index.
 	previousNodes := make([]*Node, s.level)
@@ -103,9 +102,8 @@ func (s *skipList) searchWithPreviousNodes(index uint64) ([]*Node, *Node) {
 	return previousNodes, currentNode
 }
 
-// searchWithoutPreviousNodes will return the value whose index is given index.
-// If can not find the given index, return nil.
-// This function is faster than searchWithPreviousNodes and it used to only searching index.
+//查询的时候使用，仅返回index对应的node index 不存在，返回nil
+
 func (s *skipList) searchWithoutPreviousNodes(index uint64) *Node {
 	currentNode := s.head
 
